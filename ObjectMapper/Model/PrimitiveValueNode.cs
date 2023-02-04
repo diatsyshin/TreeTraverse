@@ -4,8 +4,8 @@ namespace ReflectionsTest.ObjectMapper.Model;
 
 internal sealed class PrimitiveValueNode : ReflectionNodeBase
 {
-    public PrimitiveValueNode(ReflectionNodeBase? parent, object? value)
-        : base(parent) => Value = value;
+    public PrimitiveValueNode(object? value)
+        : base() => Value = value;
 
     public object? Value { get; }
 

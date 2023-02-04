@@ -21,7 +21,7 @@ internal sealed class UpdaterVisitor : IVisitor<ReflectionNodeBase>
     public void VisitPrimitivePropertyNode(PrimitivePropertyNode node, object valueOwner) {
         var value = node.Property.Getter.GetValue(valueOwner);
         if(node.Property.PropertyType == typeof(double?)) {
-            node.Property.Setter.SetValue(valueOwner, (double?)value + 1);
+            node.Property.Setter.SetValue(valueOwner, ((double?)value ?? 0.0) + 1.0);
         }
 
         if(node.Property.PropertyType == typeof(int)) {
@@ -34,5 +34,9 @@ internal sealed class UpdaterVisitor : IVisitor<ReflectionNodeBase>
     }
 
     public void VisitPrimitiveValueNode(PrimitiveValueNode node) {
+    }
+
+    public void VisitNullNode(NullNode node)
+    {
     }
 }

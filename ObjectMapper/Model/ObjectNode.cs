@@ -5,8 +5,7 @@ namespace ReflectionsTest.ObjectMapper.Model;
 
 internal sealed class ObjectNode : ReflectionNodeBase
 {
-    public ObjectNode(ReflectionNodeBase? parent, object objectReference, List<ReflectionNodeBase> properties)
-        : base(parent) 
+    public ObjectNode(object objectReference, List<ReflectionNodeBase> properties)
     {
         Properties = properties;
         ObjectReference = objectReference;

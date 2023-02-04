@@ -14,4 +14,6 @@ internal interface IVisitor<TNode>
     void VisitPrimitivePropertyNode(PrimitivePropertyNode node, object valueOwner);
 
     void VisitPrimitiveValueNode(PrimitiveValueNode node);
+
+    void VisitNullNode(NullNode node);
 }

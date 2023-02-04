@@ -7,7 +7,13 @@ internal class TestClass1 {
     public int IntProp { get; set; }
     public double? DoubleProp { get; set; }
 
+    public SimpleClass? DummyRef { get; set; }
+
     public IEnumerable<QuantityClass> Samples { get; set; }
+}
+
+internal class SimpleClass {
+    public string DummyValue { get; set; }
 }
 
 internal class QuantityClass {
@@ -24,7 +30,7 @@ internal static class Tester {
 
         Console.WriteLine("Generating data...");
         stopwatch.Start();
-        var data = TestDataGenerator(100000).ToList();
+        var data = TestDataGenerator(1000000).ToList();
         stopwatch.Stop();
         Console.WriteLine("Data have been generated for {0} sec.", stopwatch.Elapsed.TotalSeconds);
 
@@ -67,7 +73,10 @@ internal static class Tester {
         for (int i = 0; i < capacity; i++) {
             var instance = new TestClass1() {
                 IntProp = 1,
-                DoubleProp = 1.1d,
+                //DoubleProp = 1.1d,
+                DoubleProp = null,
+                //DummyRef = new SimpleClass() { DummyValue = null },
+                DummyRef = null,
                 Samples = new List<QuantityClass>() {
                     new QuantityClass { Uom = "Pressure", Value = 3.0d },
                     new QuantityClass { Uom = "Density", Value = 4.0d },

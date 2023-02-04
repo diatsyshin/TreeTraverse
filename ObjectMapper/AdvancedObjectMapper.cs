@@ -1,6 +1,8 @@
 #nullable enable
 
 using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
 using ReflectionsTest.ObjectMapper.Model;
 
 internal sealed class AdvancedObjectMapper<T>
@@ -8,9 +10,9 @@ internal sealed class AdvancedObjectMapper<T>
 {
     private Dictionary<Type, Dictionary<string, IProperty>> _propertiesCache = new ();
 
-    public ReflectionNodeBase? BuildMap(T? instance)
+    public ReflectionNodeBase BuildMap(T? instance)
     {
-        if(instance is null) return null;
+        if(instance is null) return new NullNode();
 
         return HandleObject(instance);
     }
@@ -21,30 +23,30 @@ internal sealed class AdvancedObjectMapper<T>
         
         ReflectionNodeBase tree = classification switch 
         {
-            TypeClassification.Collection   => HandleCollection(null, (IEnumerable)instance),
-            TypeClassification.RefType      => HandleRefType(null, instance),
-            TypeClassification.Primitive    => HandlePrimitiveValue(null, instance),
+            TypeClassification.Collection   => HandleCollection((IEnumerable)instance),
+            TypeClassification.RefType      => HandleRefType(instance),
+            TypeClassification.Primitive    => HandlePrimitiveValue(instance),
             
             _ => throw new ArgumentException("Unknown type classification")
         };
         return tree;
     }
 
-    private ReflectionNodeBase HanleProperty(object target, IProperty property) {
+    private ReflectionNodeBase HandleProperty(object target, IProperty property) {
         var value = property.Getter.GetValue(target);
-        var classification = GetTypeClassification(value.GetType());
+        var classification = GetTypeClassification(property.PropertyType);
         ReflectionNodeBase node = classification switch 
         {
-            TypeClassification.Collection   => HandleCollection(null, (IEnumerable)value),
-            TypeClassification.RefType      => HandleRefType(null, value),
-            TypeClassification.Primitive    => HandlePrimitiveProperty(null, target, property),
+            TypeClassification.Collection   => HandleCollection((IEnumerable)value),
+            TypeClassification.RefType      => HandleRefType(value),
+            TypeClassification.Primitive    => HandlePrimitiveProperty(target, property),
             
             _ => throw new ArgumentException("Unknown type classification")
         };
         return node;
     }
 
-    private CollectionNode HandleCollection(ReflectionNodeBase? parent, IEnumerable collection) {
+    private CollectionNode HandleCollection(IEnumerable collection) {
         var items = new List<ReflectionNodeBase>();
         foreach(var item in collection) {
             if (item is null) continue;
@@ -53,42 +55,27 @@ internal sealed class AdvancedObjectMapper<T>
 
             items.Add(node);
         }
-        return new CollectionNode(parent, items);
+        return new CollectionNode(items);
     }
 
-    private ObjectNode HandleRefType(ReflectionNodeBase? parent, object target)
+    private ReflectionNodeBase HandleRefType(object? target)
     {
+        if(target is null) return new NullNode();
+        
         var props = new List<ReflectionNodeBase>();
         var properties = target.GetType().GetProperties();
         foreach(var prop in properties) {
-            IProperty? property = null;
-            if(_propertiesCache.ContainsKey(prop.DeclaringType) 
-                && _propertiesCache[prop.DeclaringType].ContainsKey(prop.Name)) 
-            {
-                property = _propertiesCache[prop.DeclaringType][prop.Name];
-            } else {
-                var setter = prop.CreateSetter();
-                var getter = prop.CreateGetter();
-                
-                property = new Property(prop.DeclaringType, prop.PropertyType, setter, getter);
-
-                if(!_propertiesCache.ContainsKey(prop.DeclaringType)){
-                    _propertiesCache[prop.DeclaringType] = new ();
-                }
-                
-                _propertiesCache[prop.DeclaringType][prop.Name] = property;
-            }
-
-            var node = HanleProperty(target, property);
+            var property    = GetOrCreateProperty(prop);
+            var node        = HandleProperty(target, property);
 
             props.Add(node);
         }
-        return new ObjectNode(parent, target, props);
+        return new ObjectNode(target, props);
     }
 
-    private PrimitiveValueNode HandlePrimitiveValue(ReflectionNodeBase? parent, object? value) => new PrimitiveValueNode(parent, value);
+    private PrimitiveValueNode HandlePrimitiveValue(object? value) => new PrimitiveValueNode(value);
 
-    private PrimitivePropertyNode HandlePrimitiveProperty(ReflectionNodeBase? parent, object valueOwner, IProperty property) => new PrimitivePropertyNode(parent, valueOwner, property);
+    private PrimitivePropertyNode HandlePrimitiveProperty(object propertyOwner, IProperty property) => new PrimitivePropertyNode(propertyOwner, property);
     
 
     private static TypeClassification GetTypeClassification(Type type) {
@@ -98,4 +85,42 @@ internal sealed class AdvancedObjectMapper<T>
         
         return TypeClassification.Unknown;
     }
+
+    private IProperty GetOrCreateProperty(PropertyInfo prop)
+    {
+        IProperty? property = null;
+        if (!TryGetPropertyFromCache(prop, out property))
+        {
+            var setter = prop.CreateSetter();
+            var getter = prop.CreateGetter();
+
+            property = new Property(prop.DeclaringType, prop.PropertyType, setter, getter);
+
+            AddToCache(prop, property);
+        }
+
+        Debug.Assert(property is not null);
+
+        return property;
+    }
+
+    private bool TryGetPropertyFromCache(PropertyInfo prop, out IProperty? property)
+    {
+        //Init cache
+        if (!_propertiesCache.ContainsKey(prop.DeclaringType))
+        {
+            _propertiesCache[prop.DeclaringType] = new();
+        }
+        property = IsPropertyInCache(prop)
+            ? _propertiesCache[prop.DeclaringType][prop.Name]
+            : null;
+
+        return property is not null;
+    }
+
+    private bool IsPropertyInCache(PropertyInfo prop) =>
+        _propertiesCache.ContainsKey(prop.DeclaringType)
+                    && _propertiesCache[prop.DeclaringType].ContainsKey(prop.Name);
+
+    private void AddToCache(PropertyInfo prop, IProperty property) => _propertiesCache[prop.DeclaringType][prop.Name] = property;
 }

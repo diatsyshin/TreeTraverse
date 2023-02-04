@@ -25,4 +25,9 @@ internal sealed class SimpleVisitor : IVisitor<ReflectionNodeBase>
     public void VisitPrimitiveValueNode(PrimitiveValueNode node) {
         //Console.WriteLine("Primitive node value: {0}", node.Value);
     }
+
+    public void VisitNullNode(NullNode node)
+    {
+        //throw new NotImplementedException();
+    }
 }

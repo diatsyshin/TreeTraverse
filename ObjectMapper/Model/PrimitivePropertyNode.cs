@@ -4,18 +4,18 @@ namespace ReflectionsTest.ObjectMapper.Model;
 
 internal sealed class PrimitivePropertyNode : ReflectionNodeBase
 {
-    public PrimitivePropertyNode(ReflectionNodeBase? parent, object valueOwner, IProperty property)
-        : base(parent) 
+    public PrimitivePropertyNode(object valueOwner, IProperty property)
+        : base()
     {
-        ValueOwnerReference = valueOwner;
+        PropertyOwnerReference = valueOwner;
         Property = property;
     }
 
-    public object ValueOwnerReference { get; }
+    public object PropertyOwnerReference { get; }
 
     public IProperty Property { get; }
 
     public override TypeClassification TypeClassification => TypeClassification.Primitive;
 
-    public override void Accept(IVisitor<ReflectionNodeBase> visitor) => visitor.VisitPrimitivePropertyNode(this, ValueOwnerReference);
+    public override void Accept(IVisitor<ReflectionNodeBase> visitor) => visitor.VisitPrimitivePropertyNode(this, PropertyOwnerReference);
 }

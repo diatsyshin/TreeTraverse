@@ -8,8 +8,8 @@ internal sealed class CollectionNode : ReflectionNodeBase
 
     public override TypeClassification TypeClassification => TypeClassification.Collection;
 
-    public CollectionNode(ReflectionNodeBase? parent, List<ReflectionNodeBase> items)
-        :base(parent) => Items = items;
+    public CollectionNode(List<ReflectionNodeBase> items)
+        :base() => Items = items;
 
     public override void Accept(IVisitor<ReflectionNodeBase> visitor) => visitor.VisitCollectionNode(this);
 }
